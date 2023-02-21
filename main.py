@@ -1,8 +1,10 @@
+import asyncio
 import logging
 import sqlite3
 from uuid import uuid4
 import os
 
+import telegram
 from telegram import Update
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes
 import Data_file
@@ -15,12 +17,15 @@ import Dictionary
 
 bdConnect = BDconnect()
 TokenBot = Data_file.Token
+#bot = telegram.Bot(TokenBot)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
+"""async def test():
+    await bot.send_message(chat_id=490466369, text='test')"""
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bdConnect.insert_user(name=update.effective_user.full_name, user_id=update.effective_user.id, mafia_name="-")
@@ -34,13 +39,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     response = responseManager.generate_response_with_name()
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=response)
 
+async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print('img_test')
+    responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    response = responseManager.generate_response_with_name()
+
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=response)
     """print(3)
     print(context._user_id)
     key = str(uuid4())
@@ -71,6 +82,9 @@ async def put(update, context):
     # Send the key to the user
     await update.message.reply_text(key)
 
+
+#'👍😅🙃😂😘❤️😍😊😁'
+#👍😅🙃😂😘❤️😍😊😁
 
 async def get(update, context):
     print(2)
@@ -103,14 +117,20 @@ if __name__ == '__main__':
     bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
 
     bdConnect.update_user_state_sending(user_id=11111, state_sending=False)
-    sendingMessagesManager = SendingMessagesManager()"""
+    sendingMessagesManager = SendingMessagesManager()
+
+    test = test()
+    asyncio.run(test)
+"""
 
     application = ApplicationBuilder().token(TokenBot).build()
 
     start_handler = CommandHandler('start', start)
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
+    photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
 
     application.add_handler(start_handler)
     application.add_handler(echo_handler)
+    application.add_handler(photo_handler)
 
     application.run_polling()
