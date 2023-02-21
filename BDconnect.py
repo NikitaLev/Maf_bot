@@ -35,6 +35,15 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def update_user_state_sending(self, user_id, state_sending):
+        cursor = self.sqlite_connection.cursor()
+        data = (state_sending, user_id)
+        cursor.execute("""UPDATE User
+                       SET sending_message = ?
+                       WHERE user_id = ?""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def get_user_state(self, user_id):
         cursor = self.sqlite_connection.cursor()
         sql_req = 'SELECT state FROM User where user_id = %s' % str(user_id)
@@ -72,6 +81,15 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def get_user_with_state_sending(self, state_sending):
+        cursor = self.sqlite_connection.cursor()
+        print(state_sending)
+        cursor.execute('SELECT mafia_name, user_id FROM User where sending_message = ?', state_sending)
+        res = cursor.fetchall()
+        res = res[0]
+        print(res[1])
+        cursor.close()
+        return res
 
     def test(self):
         user_id = 490466369
@@ -84,5 +102,14 @@ class BDconnect:
         print(sql_req, res, res1)
         self.sqlite_connection.commit()
         cursor.close()
+
+    def test_insert_user(self, name, user_id, mafia_name):
+        user = (name, user_id, mafia_name, 0, '', 0, True)
+        if len(self.check_user(user_id)) == 0:
+            cursor = self.sqlite_connection.cursor()
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message) "
+                           "VALUES (?, ?, ?, ?, ?, ?, ?)", user)
+            self.sqlite_connection.commit()
+            cursor.close()
 
 

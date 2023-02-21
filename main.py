@@ -9,6 +9,7 @@ import Data_file
 
 from BDconnect import BDconnect
 from ResponseManager import ResponseManager
+from SendingMessagesManager import SendingMessagesManager
 
 import Dictionary
 
@@ -97,9 +98,13 @@ if __name__ == '__main__':
     for r in Dictionary.UserState.keys():
         print(r)
     print(list(Dictionary.UserState.keys())[0])
-    print(Dictionary.UserState.values())"""
-    
-    
+    print(Dictionary.UserState.values())
+
+    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
+
+    bdConnect.update_user_state_sending(user_id=11111, state_sending=False)
+    sendingMessagesManager = SendingMessagesManager()"""
+
     application = ApplicationBuilder().token(TokenBot).build()
 
     start_handler = CommandHandler('start', start)
