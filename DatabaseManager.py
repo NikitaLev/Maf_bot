@@ -19,7 +19,8 @@ class DatabaseManager:
                         mafia_name TEXT,
                         state INTEGER,
                         message_history json,
-                        id_last_message id)
+                        id_last_message INTEGER,
+                        sending_message NUMERIC)
                     """)
 
         cursor.execute("""CREATE TABLE if not exists Message

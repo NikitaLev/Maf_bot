@@ -10,11 +10,11 @@ class BDconnect:
         self.sqlite_connection = sqlite3.connect(self.db_manager.name_bd)
 
     def insert_user(self, name, user_id, mafia_name):
-        user = (name, user_id, mafia_name, 0, '', 0)
+        user = (name, user_id, mafia_name, 0, '', 0, True)
         if len(self.check_user(user_id)) == 0:
             cursor = self.sqlite_connection.cursor()
-            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message) "
-                           "VALUES (?, ?, ?, ?, ?, ?)", user)
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message) "
+                           "VALUES (?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
 
