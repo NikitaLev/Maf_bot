@@ -13,6 +13,7 @@ from ResponseManager import ResponseManager
 import Dictionary
 
 bdConnect = BDconnect()
+TokenBot = Data_file.Token
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     print(Dictionary.UserState.values())"""
     
     
-    application = ApplicationBuilder().token(Data_file.Token).build()
+    application = ApplicationBuilder().token(TokenBot).build()
 
     start_handler = CommandHandler('start', start)
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)

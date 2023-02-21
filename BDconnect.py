@@ -1,31 +1,13 @@
 import sqlite3
+import DatabaseManager
 import Dictionary
 
+from DatabaseManager import DatabaseManager
 
 class BDconnect:
     def __init__(self):
-        self.sqlite_connection = sqlite3.connect("bot.db")
-        self.create_db()
-
-    def create_db(self):
-        cursor = self.sqlite_connection.cursor()
-
-        cursor.execute("""CREATE TABLE if not exists User
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                        name TEXT, 
-                        user_id INTEGER,
-                        mafia_name TEXT,
-                        state INTEGER,
-                        message_history json,
-                        id_last_message id)
-                    """)
-
-        cursor.execute("""CREATE TABLE if not exists Message
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                        user_id INTEGER,
-                        message TEXT)
-                    """)
-        cursor.close()
+        self.db_manager = DatabaseManager()
+        self.sqlite_connection = sqlite3.connect(self.db_manager.name_bd)
 
     def insert_user(self, name, user_id, mafia_name):
         user = (name, user_id, mafia_name, 0, '', 0)
