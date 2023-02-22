@@ -56,6 +56,24 @@ class ResponseManager:
         result = random.choice(response) % name
         return result
 
+    def response_to_invitation_true(self):
+        response = Dictionary.response_to_invitation_true
+        bdConnector.set_user_invitation_status(1, self.user_id)
+        result = random.choice(response)
+        return result
+
+    def response_to_invitation_false(self):
+        response = Dictionary.response_to_invitation_false
+        bdConnector.set_user_invitation_status(0, self.user_id)
+        result = random.choice(response)
+        return result
+
+    def response_to_invitation_question(self):
+        response = Dictionary.response_to_invitation_question
+        bdConnector.set_user_invitation_status(2, self.user_id)
+        result = random.choice(response)
+        return result
+
 
 
 

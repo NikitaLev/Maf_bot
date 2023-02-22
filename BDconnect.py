@@ -10,11 +10,12 @@ class BDconnect:
         self.sqlite_connection = sqlite3.connect(self.db_manager.name_bd)
 
     def insert_user(self, name, user_id, mafia_name):
-        user = (name, user_id, mafia_name, 0, '', 0, True, False)
+        user = (name, user_id, mafia_name, 0, '', 0, True, False, False)
         if len(self.check_user(user_id)) == 0:
             cursor = self.sqlite_connection.cursor()
-            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message, super_user) "
-                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", user)
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, "
+                           "sending_message, super_user, invitation_status)"
+                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
 
@@ -119,6 +120,16 @@ class BDconnect:
         cursor.close()
         return res
 
+    def set_user_invitation_status(self, status, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (status, user_id)
+        print('data', data)
+        cursor.execute("""UPDATE User
+                               SET invitation_status = ?
+                               WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def test(self):
         user_id = 490466369
         cursor = self.sqlite_connection.cursor()
@@ -132,11 +143,12 @@ class BDconnect:
         cursor.close()
 
     def test_insert_user(self, name, user_id, mafia_name):
-        user = (name, user_id, mafia_name, 0, '', 0, True)
+        user = (name, user_id, mafia_name, 0, '', 0, True, False, False)
         if len(self.check_user(user_id)) == 0:
             cursor = self.sqlite_connection.cursor()
-            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message) "
-                           "VALUES (?, ?, ?, ?, ?, ?, ?)", user)
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, "
+                           "sending_message, super_user, invitation_status)"
+                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
 
