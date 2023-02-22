@@ -1,38 +1,20 @@
 import sqlite3
+import DatabaseManager
 import Dictionary
 
+from DatabaseManager import DatabaseManager
 
 class BDconnect:
     def __init__(self):
-        self.sqlite_connection = sqlite3.connect("bot.db")
-        self.create_db()
-
-    def create_db(self):
-        cursor = self.sqlite_connection.cursor()
-
-        cursor.execute("""CREATE TABLE if not exists User
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                        name TEXT, 
-                        user_id INTEGER,
-                        mafia_name TEXT,
-                        state INTEGER,
-                        message_history json,
-                        id_last_message id)
-                    """)
-
-        cursor.execute("""CREATE TABLE if not exists Message
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                        user_id INTEGER,
-                        message TEXT)
-                    """)
-        cursor.close()
+        self.db_manager = DatabaseManager()
+        self.sqlite_connection = sqlite3.connect(self.db_manager.name_bd)
 
     def insert_user(self, name, user_id, mafia_name):
-        user = (name, user_id, mafia_name, 0, '', 0)
+        user = (name, user_id, mafia_name, 0, '', 0, True)
         if len(self.check_user(user_id)) == 0:
             cursor = self.sqlite_connection.cursor()
-            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message) "
-                           "VALUES (?, ?, ?, ?, ?, ?)", user)
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message) "
+                           "VALUES (?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
 
@@ -49,6 +31,15 @@ class BDconnect:
         data = (mafia_name, user_id)
         cursor.execute("""UPDATE User
                        SET mafia_name = ?
+                       WHERE user_id = ?""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def update_user_state_sending(self, user_id, state_sending):
+        cursor = self.sqlite_connection.cursor()
+        data = (state_sending, user_id)
+        cursor.execute("""UPDATE User
+                       SET sending_message = ?
                        WHERE user_id = ?""", data)
         self.sqlite_connection.commit()
         cursor.close()
@@ -90,6 +81,15 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def get_user_with_state_sending(self, state_sending):
+        cursor = self.sqlite_connection.cursor()
+        print(state_sending)
+        cursor.execute('SELECT mafia_name, user_id FROM User where sending_message = ?', state_sending)
+        res = cursor.fetchall()
+        #res = res[0]
+        #print(res[0],res[1])
+        cursor.close()
+        return res
 
     def test(self):
         user_id = 490466369
@@ -102,5 +102,14 @@ class BDconnect:
         print(sql_req, res, res1)
         self.sqlite_connection.commit()
         cursor.close()
+
+    def test_insert_user(self, name, user_id, mafia_name):
+        user = (name, user_id, mafia_name, 0, '', 0, True)
+        if len(self.check_user(user_id)) == 0:
+            cursor = self.sqlite_connection.cursor()
+            cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, sending_message) "
+                           "VALUES (?, ?, ?, ?, ?, ?, ?)", user)
+            self.sqlite_connection.commit()
+            cursor.close()
 
 

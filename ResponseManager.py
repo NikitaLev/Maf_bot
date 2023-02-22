@@ -42,7 +42,7 @@ class ResponseManager:
         print(response, self.user_state)
         result = random.choice(response)
         result = result % self.user_name_mf
-        if self.user_name_mf == 3:
+        if self.user_state == 3:
             self.set_user_state(1)
 
         return result
