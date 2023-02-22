@@ -44,8 +44,18 @@ class ResponseManager:
         result = result % self.user_name_mf
         if self.user_state == 3:
             self.set_user_state(1)
-
         return result
+
+    def generate_response_for_super_user_sending(self, name):
+        response = Dictionary.response_for_super_user_sending
+        result = random.choice(response) % name
+        return result
+
+    def generate_response_for_default_user_sending(self, name):
+        response = Dictionary.response_for_default_user_sending
+        result = random.choice(response) % name
+        return result
+
 
 
 
