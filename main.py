@@ -45,6 +45,23 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=response)
 
+async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sendingMessagesManager = SendingMessagesManager()
+    list_user_for_sending = sendingMessagesManager.user_sending
+
+    for user in list_user_for_sending:
+        name = user[0]
+        id = user[1]
+        template = sendingMessagesManager.get_template_sending_with_name() % name
+        await context.bot.send_message(chat_id=id,
+                                            text=template)
+
+
+    #response = responseManager.generate_response_with_name()
+
+    #await context.bot.send_message(chat_id=update.effective_chat.id,
+    #                               text=response)
+
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('img_test')
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
@@ -114,22 +131,26 @@ if __name__ == '__main__':
     print(list(Dictionary.UserState.keys())[0])
     print(Dictionary.UserState.values())
 
-    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
 
     bdConnect.update_user_state_sending(user_id=11111, state_sending=False)
     sendingMessagesManager = SendingMessagesManager()
 
     test = test()
     asyncio.run(test)
+    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
 """
 
     application = ApplicationBuilder().token(TokenBot).build()
 
     start_handler = CommandHandler('start', start)
+    sending_handler = CommandHandler('sending', sending)
+
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
 
     application.add_handler(start_handler)
+    application.add_handler(sending_handler)
+
     application.add_handler(echo_handler)
     application.add_handler(photo_handler)
 

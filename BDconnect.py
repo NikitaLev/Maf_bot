@@ -86,8 +86,8 @@ class BDconnect:
         print(state_sending)
         cursor.execute('SELECT mafia_name, user_id FROM User where sending_message = ?', state_sending)
         res = cursor.fetchall()
-        res = res[0]
-        print(res[1])
+        #res = res[0]
+        #print(res[0],res[1])
         cursor.close()
         return res
 
