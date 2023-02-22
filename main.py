@@ -17,7 +17,7 @@ import Dictionary
 
 bdConnect = BDconnect()
 TokenBot = Data_file.Token
-#bot = telegram.Bot(TokenBot)
+# bot = telegram.Bot(TokenBot)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,6 +26,7 @@ logging.basicConfig(
 
 """async def test():
     await bot.send_message(chat_id=490466369, text='test')"""
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bdConnect.insert_user(name=update.effective_user.full_name, user_id=update.effective_user.id, mafia_name="-")
@@ -45,22 +46,32 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=response)
 
+
 async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    sendingMessagesManager = SendingMessagesManager()
-    list_user_for_sending = sendingMessagesManager.user_sending
+    responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    if bdConnect.get_user_level(user_id=responseManager.user_id):
+        sendingMessagesManager = SendingMessagesManager()
+        list_user_for_sending = sendingMessagesManager.user_sending
 
-    for user in list_user_for_sending:
-        name = user[0]
-        id = user[1]
-        template = sendingMessagesManager.get_template_sending_with_name() % name
-        await context.bot.send_message(chat_id=id,
-                                            text=template)
+        for user in list_user_for_sending:
+            name = user[0]
+            id = user[1]
+            template = sendingMessagesManager.get_template_sending_with_name() % name
+            await context.bot.send_message(chat_id=id,
+                                           text=template)
+        response = responseManager.generate_response_for_super_user_sending(name=responseManager.user_name_mf)
+        await context.bot.send_message(chat_id=responseManager.user_id,
+                                       text=response)
+    else:
+        response = responseManager.generate_response_for_default_user_sending(name=responseManager.user_name_mf)
+        await context.bot.send_message(chat_id=responseManager.user_id,
+                                       text=response)
 
+    # response = responseManager.generate_response_with_name()
 
-    #response = responseManager.generate_response_with_name()
-
-    #await context.bot.send_message(chat_id=update.effective_chat.id,
+    # await context.bot.send_message(chat_id=update.effective_chat.id,
     #                               text=response)
+
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('img_test')
@@ -100,8 +111,8 @@ async def put(update, context):
     await update.message.reply_text(key)
 
 
-#'👍😅🙃😂😘❤️😍😊😁'
-#👍😅🙃😂😘❤️😍😊😁
+# '👍😅🙃😂😘❤️😍😊😁'
+# 👍😅🙃😂😘❤️😍😊😁
 
 async def get(update, context):
     print(2)
@@ -116,7 +127,7 @@ async def get(update, context):
     await update.message.reply_text(value)
 
 
-if __name__ == '__main__':
+def test_mod():
     """print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
     print(Dictionary.UserState)
@@ -137,8 +148,13 @@ if __name__ == '__main__':
 
     test = test()
     asyncio.run(test)
-    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
+    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")    490466369
 """
+
+
+if __name__ == '__main__':
+
+    test_mod()
 
     application = ApplicationBuilder().token(TokenBot).build()
 

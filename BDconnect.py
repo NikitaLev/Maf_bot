@@ -91,6 +91,34 @@ class BDconnect:
         cursor.close()
         return res
 
+    def set_super_user_level(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (True, user_id)
+        cursor.execute("""UPDATE User
+                               SET super_user = ?
+                               WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def set_default_user_level(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (False, user_id)
+        cursor.execute("""UPDATE User
+                               SET super_user = ?
+                               WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def get_user_level(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT super_user FROM User where user_id = %s' % str(user_id)
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        res1 = res[0]
+        res = res1[0]
+        cursor.close()
+        return res
+
     def test(self):
         user_id = 490466369
         cursor = self.sqlite_connection.cursor()
