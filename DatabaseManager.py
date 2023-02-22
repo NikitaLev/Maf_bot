@@ -21,7 +21,8 @@ class DatabaseManager:
                         message_history json,
                         id_last_message INTEGER,
                         sending_message NUMERIC,
-                        super_user NUMERIC)
+                        super_user NUMERIC,
+                        invitation_status INTEGER)
                     """)
 
         cursor.execute("""CREATE TABLE if not exists Message

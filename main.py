@@ -5,8 +5,8 @@ from uuid import uuid4
 import os
 
 import telegram
-from telegram import Update
-from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import filters, MessageHandler, CallbackQueryHandler, ApplicationBuilder, CommandHandler, ContextTypes
 import Data_file
 
 from BDconnect import BDconnect
@@ -40,6 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     response = responseManager.generate_response_with_name()
 
@@ -54,12 +55,23 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
         list_user_for_sending = sendingMessagesManager.user_sending
 
         for user in list_user_for_sending:
-            name = user[0]
-            id = user[1]
-            template = sendingMessagesManager.get_template_sending_with_name() % name
-            await context.bot.send_message(chat_id=id,
-                                           text=template)
+            responseMan = ResponseManager(user_id=user[1], message=update.message.text)
+            responseMan.response_to_invitation_question()
+
+            template = sendingMessagesManager.get_template_sending_with_name() % responseMan.user_name_mf
+            #await context.bot.send_message(chat_id=id,text=template)
+
+            keyboard = [
+                [InlineKeyboardButton("Приду на игры", callback_data='+')],
+                [InlineKeyboardButton("В следующий раз", callback_data='-')],
+                [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
+
         response = responseManager.generate_response_for_super_user_sending(name=responseManager.user_name_mf)
+
         await context.bot.send_message(chat_id=responseManager.user_id,
                                        text=response)
     else:
@@ -67,10 +79,29 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=responseManager.user_id,
                                        text=response)
 
-    # response = responseManager.generate_response_with_name()
 
-    # await context.bot.send_message(chat_id=update.effective_chat.id,
-    #                               text=response)
+async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    variant = query.data
+    print('query', query)
+    print('variant', variant)
+    print('variant', query.message)
+    template = ''
+
+    responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+    if variant == '+':
+        template = responseManager.response_to_invitation_true()
+    elif variant == '-':
+        template = responseManager.response_to_invitation_false()
+    else:
+        template = responseManager.response_to_invitation_question()
+    await context.bot.send_message(chat_id=responseManager.user_id, text=template)
+"""    await query.answer()
+    await query.edit_message_text(text=f"Выбранный вариант: {variant}")
+    keyboard = [
+        [InlineKeyboardButton("Приду на игры", callback_data='test')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)"""
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -80,55 +111,14 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=response)
-    """print(3)
-    print(context._user_id)
-    key = str(uuid4())
-    for r in context.user_data:
-        print(r, "user_data")
-    if key in context.user_data:
-        print(key, context.user_data[key])
-    else:
-        print(key, ' text empty')
-        context.user_data[key] = update.message.text
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)"""
-
-
-async def put(update, context):
-    """Usage: /put value"""
-    # Generate ID and separate value from command
-    print(1)
-    key = str(uuid4())
-    print('key ', key)
-    # We don't use context.args here, because the value may contain whitespaces
-
-    print('update.message.text ', update.message.text)
-    value = update.message.text.partition(' ')[2]
-    print('value ', value)
-
-    # Store value
-    context.user_data[key] = value
-    # Send the key to the user
-    await update.message.reply_text(key)
-
-
 # '👍😅🙃😂😘❤️😍😊😁'
 # 👍😅🙃😂😘❤️😍😊😁
 
-async def get(update, context):
-    print(2)
-    """Usage: /get uuid"""
-    # Separate ID from command
-    key = context.args[0]
-    print('key ', key)
-
-    # Load value and send it to the user
-    value = context.user_data.get(key, 'Not found')
-    print('value ', value)
-    await update.message.reply_text(value)
-
 
 def test_mod():
-    """print(Dictionary.response_template_in_state)
+    bdConnect.set_super_user_level(490466369)
+    """
+    print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
     print(Dictionary.UserState)
     print(Dictionary.UserState.get(list(Dictionary.UserState.keys())[0]))
@@ -163,6 +153,8 @@ if __name__ == '__main__':
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
+
+    application.add_handler(CallbackQueryHandler(response_to_invitation))
 
     application.add_handler(start_handler)
     application.add_handler(sending_handler)
