@@ -8,6 +8,7 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import filters, MessageHandler, CallbackQueryHandler, ApplicationBuilder, CommandHandler, ContextTypes
 import Data_file
+import base64
 
 from BDconnect import BDconnect
 from ResponseManager import ResponseManager
@@ -105,12 +106,38 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print('img_test')
+
+    newFile = update.message.photo
+    #newFile[0].file_id = 'AgACAgIAAxkBAAIBi2P_xRIa8MH9DzVPXZ5DBRrWvYdEAAIlzDEbjqj5S4e9uvP_dIr0AQADAgADbQADLgQ'
+
+    print(newFile[0])
+    print(newFile[1])
+
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo='AgACAgIAAxkBAAIBlWP_xu6r84PjlgAB38gOpzvMEoSXogACLcwxG46o-Uu1VpAc_71ufgEAAwIAA20AAy4E')
+
+    """newFile.download('img_'+update.message.photo[-1].file_id+'.png')
+    with open('img_' + f_id + '.jpg', 'wb') as file:
+        file.write(down_file)
+    AgACAgIAAxkBAAIBi2P_xRIa8MH9DzVPXZ5DBRrWvYdEAAIlzDEbjqj5S4e9uvP_dIr0AQADAgADbQADLgQ
+    bot = update.get_bot()
+    print('bot', bot)
+    print('update.message.photo[0] - ', update.message.photo[0])
+    file_photo = bot.get_file(update.message.photo[0])
+    print('file_photo', file_photo)
+    src = '/' + update.message.photo[0].file_id
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    #encoded_string = base64.b64encode(p)
+    #print(encoded_string)
+
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo[0])
+
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     response = responseManager.generate_response_with_name()
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=response)
+                                   text=response)"""
 # '👍😅🙃😂😘❤️😍😊😁'
 # 👍😅🙃😂😘❤️😍😊😁
 

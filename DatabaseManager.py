@@ -30,4 +30,10 @@ class DatabaseManager:
                         user_id INTEGER,
                         message TEXT)
                     """)
+        cursor.execute("""CREATE TABLE if not exists Post
+                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                        user_id INTEGER,
+                        mafia_name TEXT,
+                        file_id TEXT)
+                    """)
         cursor.close()

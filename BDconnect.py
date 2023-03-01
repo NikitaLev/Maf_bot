@@ -151,5 +151,3 @@ class BDconnect:
                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
-
-
