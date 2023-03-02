@@ -57,15 +57,15 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             text_data = ''
             photo_data = ''
-
+            reply_markup = ''
             if responseManager.message.isdigit():
-                text_data, photo_data = post_creator(bdConnect.get_post(responseManager.message))
+                text_data, photo_data, reply_markup = post_creator(bdConnect.get_post(responseManager.message))
                 responseManager.set_user_state(7)
             else:
                 recognize_result = recognize_cmd(responseManager.message)
                 if (recognize_result['cmd'] == "sending_command" or recognize_result['cmd'] == "yes") \
                         and recognize_result['percent'] > 50:
-                    text_data, photo_data = post_creator(responseManager.get_data_post_user())
+                    text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
                     responseManager.set_user_state(7)
                 elif (recognize_result['cmd'] == "not" or recognize_result['cmd'] == "deactivation_post") \
                         and recognize_result['percent'] > 50:
@@ -87,13 +87,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 template = text_data
                 # await context.bot.send_message(chat_id=id,text=template)
-
-                keyboard = [
-                    [InlineKeyboardButton("Приду на игры", callback_data='+')],
-                    [InlineKeyboardButton("В следующий раз", callback_data='-')],
-                    [InlineKeyboardButton("Пока не знаю", callback_data='?')]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
 
                 await context.bot.send_photo(chat_id=update.effective_chat.id,
                                              photo=photo_data)
@@ -132,9 +125,14 @@ def recognize_cmd(cmd: str):
 
 
 def post_creator(data):
-
+    keyboard = [
+        [InlineKeyboardButton("Приду на игры", callback_data='+')],
+        [InlineKeyboardButton("В следующий раз", callback_data='-')],
+        [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     if data:
-        return data[3], data[4]
+        return data[3], data[4], reply_markup
 
 
 async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -198,6 +196,10 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                            text='Требуется текст!')
         elif responseManager.user_state == 5:
             response = responseManager.add_image_id_in_post()
+            text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
+            await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                         photo=photo_data)
+            await context.bot.send_message(chat_id=responseManager.user_id, text=text_data, reply_markup=reply_markup)
 
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
