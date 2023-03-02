@@ -72,6 +72,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     response = responseManager.deactivation_post_user()
                     await context.bot.send_message(chat_id=responseManager.user_id,
                                                    text=response)
+                    return 0
                 else:
                     response = responseManager.not_recognized_text()
                     await context.bot.send_message(chat_id=responseManager.user_id,
@@ -131,6 +132,7 @@ def recognize_cmd(cmd: str):
 
 
 def post_creator(data):
+
     if data:
         return data[3], data[4]
 
@@ -148,12 +150,6 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
             template = sendingMessagesManager.get_template_sending_with_name() % responseMan.user_name_mf
             # await context.bot.send_message(chat_id=id,text=template)
 
-            keyboard = [
-                [InlineKeyboardButton("Приду на игры", callback_data='+')],
-                [InlineKeyboardButton("В следующий раз", callback_data='-')],
-                [InlineKeyboardButton("Пока не знаю", callback_data='?')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
 
             await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
@@ -202,6 +198,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                            text='Требуется текст!')
         elif responseManager.user_state == 5:
             response = responseManager.add_image_id_in_post()
+
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
 
