@@ -22,7 +22,8 @@ class DatabaseManager:
                         id_last_message INTEGER,
                         sending_message NUMERIC,
                         super_user NUMERIC,
-                        invitation_status INTEGER)
+                        invitation_status INTEGER,
+                        id_post_create INTEGER)
                     """)
 
         cursor.execute("""CREATE TABLE if not exists Message
@@ -31,9 +32,11 @@ class DatabaseManager:
                         message TEXT)
                     """)
         cursor.execute("""CREATE TABLE if not exists Post
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                        (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                        active_post NUMERIC, 
                         user_id INTEGER,
-                        mafia_name TEXT,
-                        file_id TEXT)
+                        text_post TEXT,
+                        photo_id INTEGER,
+                        count_user_will_be INTEGER)
                     """)
         cursor.close()
