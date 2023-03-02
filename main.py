@@ -8,6 +8,7 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import filters, MessageHandler, CallbackQueryHandler, ApplicationBuilder, CommandHandler, ContextTypes
 import Data_file
+import base64
 
 from BDconnect import BDconnect
 from ResponseManager import ResponseManager
@@ -42,15 +43,58 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
-    response = responseManager.generate_response_with_name()
+    if responseManager.super_user:
+        if responseManager.user_state == 4:  # ожидание текста поста
+            response = responseManager.add_text_in_post()
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
+            #bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
+        elif responseManager.user_state == 5:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text='Требуется фото')
+        elif responseManager.user_state == 6:
+            text_data, photo_data = post_creator(bdConnect.get_post(responseManager.message))
+            sendingMessagesManager = SendingMessagesManager()
+            list_user_for_sending = sendingMessagesManager.user_sending
 
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=response)
+            for user in list_user_for_sending:
+                responseMan = ResponseManager(user_id=user[1], message=update.message.text)
+                responseMan.response_to_invitation_question()
+
+                template = text_data
+                # await context.bot.send_message(chat_id=id,text=template)
+
+                keyboard = [
+                    [InlineKeyboardButton("Приду на игры", callback_data='+')],
+                    [InlineKeyboardButton("В следующий раз", callback_data='-')],
+                    [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
+                await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                             photo=photo_data)
+                await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
+
+            response = responseManager.generate_response_for_super_user_sending(name=responseManager.user_name_mf)
+
+            await context.bot.send_message(chat_id=responseManager.user_id,
+                                           text=response)
+
+    else:
+        response = responseManager.generate_response_with_name()
+
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
+
+
+def post_creator(data):
+    if data:
+        return data[3], data[4]
 
 
 async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
-    if bdConnect.get_user_level(user_id=responseManager.user_id):
+    if responseManager.super_user:
         sendingMessagesManager = SendingMessagesManager()
         list_user_for_sending = sendingMessagesManager.user_sending
 
@@ -59,7 +103,7 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
             responseMan.response_to_invitation_question()
 
             template = sendingMessagesManager.get_template_sending_with_name() % responseMan.user_name_mf
-            #await context.bot.send_message(chat_id=id,text=template)
+            # await context.bot.send_message(chat_id=id,text=template)
 
             keyboard = [
                 [InlineKeyboardButton("Приду на игры", callback_data='+')],
@@ -96,6 +140,8 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
     else:
         template = responseManager.response_to_invitation_question()
     await context.bot.send_message(chat_id=responseManager.user_id, text=template)
+
+
 """    await query.answer()
     await query.edit_message_text(text=f"Выбранный вариант: {variant}")
     keyboard = [
@@ -105,17 +151,92 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print('img_test')
+    responseManager = ResponseManager(user_id=update.effective_user.id, message='-', photo_id=update.message.photo[0].file_id)
+    if responseManager.super_user:
+        if responseManager.user_state == 4:  # ожидание текста поста
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text='Требуется текст!')
+        elif responseManager.user_state == 5:
+            response = responseManager.add_image_id_in_post()
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
+
+    """
+    newFile = update.message.photo
+    # newFile[0].file_id = 'AgACAgIAAxkBAAIBi2P_xRIa8MH9DzVPXZ5DBRrWvYdEAAIlzDEbjqj5S4e9uvP_dIr0AQADAgADbQADLgQ'
+
+    print(newFile[0])
+    print(newFile[1])
+
+    await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                 photo='AgACAgIAAxkBAAIBlWP_xu6r84PjlgAB38gOpzvMEoSXogACLcwxG46o-Uu1VpAc_71ufgEAAwIAA20AAy4E')
+    await context.bot.send_message(chat_id=update.effective_chat.id, text='test')
+    newFile.download('img_'+update.message.photo[-1].file_id+'.png')
+    with open('img_' + f_id + '.jpg', 'wb') as file:
+        file.write(down_file)
+    AgACAgIAAxkBAAIBi2P_xRIa8MH9DzVPXZ5DBRrWvYdEAAIlzDEbjqj5S4e9uvP_dIr0AQADAgADbQADLgQ
+    bot = update.get_bot()
+    print('bot', bot)
+    print('update.message.photo[0] - ', update.message.photo[0])
+    file_photo = bot.get_file(update.message.photo[0])
+    print('file_photo', file_photo)
+    src = '/' + update.message.photo[0].file_id
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    #encoded_string = base64.b64encode(p)
+    #print(encoded_string)
+
+    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo[0])
+
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     response = responseManager.generate_response_with_name()
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=response)
+                                   text=response)"""
+
+
 # '👍😅🙃😂😘❤️😍😊😁'
 # 👍😅🙃😂😘❤️😍😊😁
 
 
+# test group sending
+async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    if responseManager.get_user_lvl():
+        responseManager.set_user_state(4)
+
+"""        sendingMessagesManager = SendingMessagesManager()
+        list_user_for_sending = sendingMessagesManager.user_sending
+
+        for user in list_user_for_sending:
+            responseMan = ResponseManager(user_id=user[1], message=update.message.text)
+            responseMan.response_to_invitation_question()
+
+            template = sendingMessagesManager.get_template_sending_with_name() % responseMan.user_name_mf
+            # await context.bot.send_message(chat_id=id,text=template)
+            send = [InlineKeyboardButton("Приду на игры", callback_data='+')]
+            send2 = [InlineKeyboardButton("Не приду на игры", callback_data='-')]
+            keyboard = [
+                send,
+                send2
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
+
+        response = responseManager.generate_response_for_super_user_sending(name=responseManager.user_name_mf)
+
+        await context.bot.send_message(chat_id=responseManager.user_id,
+                                       text=response)
+    else:
+        response = responseManager.generate_response_for_default_user_sending(name=responseManager.user_name_mf)
+        await context.bot.send_message(chat_id=responseManager.user_id,
+                                       text=response)"""
+
+
 def test_mod():
+    #bdConnect.get_post(1)
     bdConnect.set_super_user_level(490466369)
     """
     print(Dictionary.response_template_in_state)
@@ -142,14 +263,26 @@ def test_mod():
 """
 
 
-if __name__ == '__main__':
+async def post_builder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print('echo', update.message.text)
+    responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    if responseManager.super_user:
+        responseManager.add_new_post()
+        response = responseManager.generate_response_no_name()
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
 
+
+if __name__ == '__main__':
     test_mod()
 
     application = ApplicationBuilder().token(TokenBot).build()
 
     start_handler = CommandHandler('start', start)
+
+    post_builder_handler = CommandHandler('PostBuilder', post_builder)
     sending_handler = CommandHandler('sending', sending)
+    #group_sending_handler = CommandHandler('group', post_builder)
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
@@ -157,7 +290,11 @@ if __name__ == '__main__':
     application.add_handler(CallbackQueryHandler(response_to_invitation))
 
     application.add_handler(start_handler)
+
+    application.add_handler(post_builder_handler)
     application.add_handler(sending_handler)
+
+    #application.add_handler(group_sending_handler)
 
     application.add_handler(echo_handler)
     application.add_handler(photo_handler)
