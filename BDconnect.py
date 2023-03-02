@@ -94,6 +94,24 @@ class BDconnect:
         cursor.close()
         return res1
 
+    def deactivation_post(self, post_id):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE Post
+                       SET active_post = 0
+                       WHERE id = ?""", str(post_id))
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def break_user_post(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (0, user_id)
+        print(user_id)
+        cursor.execute("""UPDATE User
+                       SET id_post_create = ?
+                       WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def check_user(self, user_id):
         cursor = self.sqlite_connection.cursor()
         sql_req = 'SELECT * FROM User where user_id = %s' % str(user_id)

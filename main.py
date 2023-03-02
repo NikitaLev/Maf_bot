@@ -10,6 +10,7 @@ from telegram.ext import filters, MessageHandler, CallbackQueryHandler, Applicat
 import Data_file
 import base64
 
+from fuzzywuzzy import fuzz
 from BDconnect import BDconnect
 from ResponseManager import ResponseManager
 from SendingMessagesManager import SendingMessagesManager
@@ -41,22 +42,44 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print('echo', update.message.text)
+    print('echo ', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
         if responseManager.user_state == 4:  # ожидание текста поста
             response = responseManager.add_text_in_post()
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
-            #bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
+            # bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
         elif responseManager.user_state == 5:
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text='Требуется фото')
         elif responseManager.user_state == 6:
-            text_data, photo_data = post_creator(bdConnect.get_post(responseManager.message))
+
+            text_data = ''
+            photo_data = ''
+
+            if responseManager.message.isdigit():
+                text_data, photo_data = post_creator(bdConnect.get_post(responseManager.message))
+                responseManager.set_user_state(7)
+            else:
+                recognize_result = recognize_cmd(responseManager.message)
+                if (recognize_result['cmd'] == "sending_command" or recognize_result['cmd'] == "yes") \
+                        and recognize_result['percent'] > 50:
+                    text_data, photo_data = post_creator(responseManager.get_data_post_user())
+                    responseManager.set_user_state(7)
+                elif (recognize_result['cmd'] == "not" or recognize_result['cmd'] == "deactivation_post") \
+                        and recognize_result['percent'] > 50:
+                    response = responseManager.deactivation_post_user()
+                    await context.bot.send_message(chat_id=responseManager.user_id,
+                                                   text=response)
+                else:
+                    response = responseManager.not_recognized_text()
+                    await context.bot.send_message(chat_id=responseManager.user_id,
+                                                   text=response)
+                    return 0
+
             sendingMessagesManager = SendingMessagesManager()
             list_user_for_sending = sendingMessagesManager.user_sending
-
             for user in list_user_for_sending:
                 responseMan = ResponseManager(user_id=user[1], message=update.message.text)
                 responseMan.response_to_invitation_question()
@@ -79,12 +102,32 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await context.bot.send_message(chat_id=responseManager.user_id,
                                            text=response)
-
+        elif responseManager.user_state == 7:
+            recognize_result = recognize_cmd(responseManager.message)
+            if recognize_result['cmd'] == "deactivation_post"\
+                    and recognize_result['percent'] > 50:
+                response = responseManager.generate_response_no_name()
+                responseManager.deactivation_post_user()
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text=response)
     else:
         response = responseManager.generate_response_with_name()
 
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=response)
+
+
+def recognize_cmd(cmd: str):
+    rc = {'cmd': '', 'percent': 0}
+    for c, v in Dictionary.VA_CMD_LIST.items():
+        for x in v:
+            # print('rc', rc)
+            vrt = fuzz.ratio(cmd, x)
+            # print(x + ' x = '+str(vrt))
+            if vrt > rc['percent']:
+                rc['cmd'] = c
+                rc['percent'] = vrt
+    return rc
 
 
 def post_creator(data):
@@ -151,7 +194,8 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    responseManager = ResponseManager(user_id=update.effective_user.id, message='-', photo_id=update.message.photo[0].file_id)
+    responseManager = ResponseManager(user_id=update.effective_user.id, message='-',
+                                      photo_id=update.message.photo[0].file_id)
     if responseManager.super_user:
         if responseManager.user_state == 4:  # ожидание текста поста
             await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -206,6 +250,7 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if responseManager.get_user_lvl():
         responseManager.set_user_state(4)
 
+
 """        sendingMessagesManager = SendingMessagesManager()
         list_user_for_sending = sendingMessagesManager.user_sending
 
@@ -236,7 +281,7 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def test_mod():
-    #bdConnect.get_post(1)
+    # bdConnect.get_post(1)
     bdConnect.set_super_user_level(490466369)
     """
     print(Dictionary.response_template_in_state)
@@ -282,7 +327,7 @@ if __name__ == '__main__':
 
     post_builder_handler = CommandHandler('PostBuilder', post_builder)
     sending_handler = CommandHandler('sending', sending)
-    #group_sending_handler = CommandHandler('group', post_builder)
+    # group_sending_handler = CommandHandler('group', post_builder)
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
@@ -294,7 +339,7 @@ if __name__ == '__main__':
     application.add_handler(post_builder_handler)
     application.add_handler(sending_handler)
 
-    #application.add_handler(group_sending_handler)
+    # application.add_handler(group_sending_handler)
 
     application.add_handler(echo_handler)
     application.add_handler(photo_handler)
