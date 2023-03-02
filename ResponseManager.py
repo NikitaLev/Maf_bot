@@ -23,6 +23,22 @@ class ResponseManager:
             self.user_name_mf = self.get_user_name_mf()
             self.set_user_state(3)
 
+    def get_data_post_user(self):
+        return bdConnector.get_post(self.user_post)
+
+    def not_recognized_text(self):
+        response = Dictionary.not_recognized
+        result = random.choice(response)
+        return result
+
+    def deactivation_post_user(self):
+        response = Dictionary.deactivation_post
+        bdConnector.deactivation_post(post_id=self.user_post)
+        bdConnector.break_user_post(user_id=self.user_id)
+        self.set_user_state(1)
+        result = random.choice(response)
+        return result
+
     def add_text_in_post(self):
         bdConnector.add_text_in_post(self.message, self.user_post)
         self.set_user_state(5)
