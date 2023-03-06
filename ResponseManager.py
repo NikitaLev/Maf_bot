@@ -6,6 +6,10 @@ import Dictionary
 bdConnector = BDconnect()
 
 
+def get_user_name_mf(user_id):
+    return bdConnector.get_user_name_mf(user_id)
+
+
 class ResponseManager:
 
     def __init__(self, user_id, message='-', photo_id='-'):
@@ -100,7 +104,9 @@ class ResponseManager:
 
     def response_to_invitation_true(self):
         response = Dictionary.response_to_invitation_true
+
         bdConnector.set_user_invitation_status(1, self.user_id)
+
         result = random.choice(response)
         return result
 
@@ -114,6 +120,12 @@ class ResponseManager:
         response = Dictionary.response_to_invitation_question
         bdConnector.set_user_invitation_status(2, self.user_id)
         result = random.choice(response)
+        return result
+
+    def response_have_active_post(self, user_id):
+        response = Dictionary.response_have_active_post
+        name = get_user_name_mf(user_id)
+        result = random.choice(response) % name
         return result
 
 

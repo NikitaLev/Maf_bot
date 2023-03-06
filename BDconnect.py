@@ -46,6 +46,21 @@ class BDconnect:
         cursor.close()
         return res
 
+    def get_actove_post_list(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = """SELECT
+                          user_id
+                        FROM
+                          Post
+                        WHERE
+                        active_post = 1
+                        ORDER BY
+                          id DESC
+                        LIMIT 1"""
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        return res
+
     def add_post_for_user(self, user_id, post_id):
         cursor = self.sqlite_connection.cursor()
         data = (post_id, user_id)
@@ -99,6 +114,14 @@ class BDconnect:
         cursor.execute("""UPDATE Post
                        SET active_post = 0
                        WHERE id = ?""", str(post_id))
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def deactivation_app_post(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE Post
+                       SET active_post = 0
+                       WHERE active_post = 1""")
         self.sqlite_connection.commit()
         cursor.close()
 

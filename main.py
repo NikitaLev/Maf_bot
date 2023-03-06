@@ -282,6 +282,9 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def test_mod():
     # bdConnect.get_post(1)
     bdConnect.set_super_user_level(490466369)
+    #bdConnect.deactivation_app_post()
+
+    print(len(bdConnect.get_actove_post_list()) == 0)
     """
     print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
@@ -307,14 +310,22 @@ def test_mod():
 """
 
 
+# создание поста
 async def post_builder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
-        responseManager.add_new_post()
-        response = responseManager.generate_response_no_name()
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=response)
+        active_post_list = bdConnect.get_actove_post_list()
+        if len(active_post_list) == 0:
+            responseManager.add_new_post()
+            response = responseManager.generate_response_no_name()
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
+        else:
+            user_id_active_post = active_post_list[0][0]
+            response = responseManager.response_have_active_post(user_id=user_id_active_post)
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
 
 
 if __name__ == '__main__':
