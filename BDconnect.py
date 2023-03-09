@@ -46,6 +46,21 @@ class BDconnect:
         cursor.close()
         return res
 
+    def get_actove_post_list(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = """SELECT
+                          user_id
+                        FROM
+                          Post
+                        WHERE
+                        active_post = 1
+                        ORDER BY
+                          id DESC
+                        LIMIT 1"""
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        return res
+
     def add_post_for_user(self, user_id, post_id):
         cursor = self.sqlite_connection.cursor()
         data = (post_id, user_id)
@@ -102,6 +117,14 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def deactivation_app_post(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE Post
+                       SET active_post = 0
+                       WHERE active_post = 1""")
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def break_user_post(self, user_id):
         cursor = self.sqlite_connection.cursor()
         data = (0, user_id)
@@ -109,6 +132,14 @@ class BDconnect:
         cursor.execute("""UPDATE User
                        SET id_post_create = ?
                        WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def break_invitation_status(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE User
+                       SET invitation_status = 0
+                       WHERE invitation_status = 1;""")
         self.sqlite_connection.commit()
         cursor.close()
 
@@ -223,15 +254,21 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
-    def test(self):
-        user_id = 490466369
+    def add_user_in_post(self):
         cursor = self.sqlite_connection.cursor()
-        sql_req = 'SELECT mafia_name FROM User where user_id = %s' % str(user_id)
-        cursor.execute(sql_req)
-        res = cursor.fetchall()
-        res1 = res[0]
-        res = res1[0]
-        print(sql_req, res, res1)
+        cursor.execute("""UPDATE Post
+                       SET count_user_will_be = count_user_will_be + 1
+                       WHERE active_post = 1""")
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def test(self, user_id, test_P):
+        cursor = self.sqlite_connection.cursor()
+        data = (test_P, user_id)
+        print('data', data)
+        cursor.execute("""UPDATE User
+                               SET invitation_status = ?
+                               WHERE user_id = ?;""", data)
         self.sqlite_connection.commit()
         cursor.close()
 
@@ -244,3 +281,35 @@ class BDconnect:
                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
+
+    def who_marked_true(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT mafia_name FROM User where invitation_status = 1'
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        cursor.close()
+        return res
+
+    def who_marked_maybe(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT mafia_name FROM User where invitation_status = 2'
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        cursor.close()
+        return res
+
+    def check_user_invitation_status(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT invitation_status FROM User where user_id = ' + str(user_id)
+        cursor.execute(sql_req)
+        res = cursor.fetchall()[0][0]
+        cursor.close()
+        return res
+
+    def delete_user_in_post(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE Post
+                       SET count_user_will_be = count_user_will_be - 1
+                       WHERE active_post = 1""")
+        self.sqlite_connection.commit()
+        cursor.close()

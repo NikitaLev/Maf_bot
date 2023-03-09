@@ -44,7 +44,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo ', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    recognize_result = recognize_cmd(responseManager.message)
+    if recognize_result['cmd'] == "who_marked" and recognize_result['percent'] > 50:
+        response = responseManager.who_marked()
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
+        print(1)
+        return
     if responseManager.super_user:
+        print(2)
         if responseManager.user_state == 4:  # ожидание текста поста
             response = responseManager.add_text_in_post()
             await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -62,7 +70,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text_data, photo_data, reply_markup = post_creator(bdConnect.get_post(responseManager.message))
                 responseManager.set_user_state(7)
             else:
-                recognize_result = recognize_cmd(responseManager.message)
                 if (recognize_result['cmd'] == "sending_command" or recognize_result['cmd'] == "yes") \
                         and recognize_result['percent'] > 50:
                     text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
@@ -97,7 +104,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=responseManager.user_id,
                                            text=response)
         elif responseManager.user_state == 7:
-            recognize_result = recognize_cmd(responseManager.message)
             if recognize_result['cmd'] == "deactivation_post"\
                     and recognize_result['percent'] > 50:
                 response = responseManager.generate_response_no_name()
@@ -109,6 +115,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=response)
+
 
 
 def recognize_cmd(cmd: str):
@@ -135,7 +142,7 @@ def post_creator(data):
         return data[3], data[4], reply_markup
 
 
-async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+"""async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
         sendingMessagesManager = SendingMessagesManager()
@@ -158,26 +165,27 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         response = responseManager.generate_response_for_default_user_sending(name=responseManager.user_name_mf)
         await context.bot.send_message(chat_id=responseManager.user_id,
-                                       text=response)
+                                       text=response)"""
 
 
 async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    active_post_list = bdConnect.get_actove_post_list()
     query = update.callback_query
     variant = query.data
-    print('query', query)
-    print('variant', variant)
-    print('variant', query.message)
-    template = ''
-
-    responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
-    if variant == '+':
-        template = responseManager.response_to_invitation_true()
-    elif variant == '-':
-        template = responseManager.response_to_invitation_false()
+    if len(active_post_list) == 1:
+        template = ''
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        if variant == '+':
+            template = responseManager.response_to_invitation_true()
+        elif variant == '-':
+            template = responseManager.response_to_invitation_false()
+        else:
+            template = responseManager.response_to_invitation_question()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
     else:
-        template = responseManager.response_to_invitation_question()
-    await context.bot.send_message(chat_id=responseManager.user_id, text=template)
-
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        template = responseManager.all_post_deactife()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
 
 """    await query.answer()
     await query.edit_message_text(text=f"Выбранный вариант: {variant}")
@@ -281,7 +289,15 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def test_mod():
     # bdConnect.get_post(1)
-    bdConnect.set_super_user_level(490466369)
+    # bdConnect.set_super_user_level(490466369)
+    #bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
+    bdConnect.test(user_id=11111, test_P=2)
+    #list = bdConnect.who_marked_true()
+    #lis1t = bdConnect.who_marked_true()[0]
+    #lis1t2 = lis1t[0]
+    #bdConnect.deactivation_app_post()
+
+    print(len(bdConnect.get_actove_post_list()) == 0)
     """
     print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
@@ -302,19 +318,26 @@ def test_mod():
     sendingMessagesManager = SendingMessagesManager()
 
     test = test()
-    asyncio.run(test)
-    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")    490466369
+    asyncio.run(test)    490466369
 """
 
 
+# создание поста
 async def post_builder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
-        responseManager.add_new_post()
-        response = responseManager.generate_response_no_name()
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=response)
+        active_post_list = bdConnect.get_actove_post_list()
+        if len(active_post_list) == 0:
+            responseManager.add_new_post()
+            response = responseManager.generate_response_no_name()
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
+        else:
+            user_id_active_post = active_post_list[0][0]
+            response = responseManager.response_have_active_post(user_id=user_id_active_post)
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
 
 
 if __name__ == '__main__':
@@ -325,7 +348,7 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
 
     post_builder_handler = CommandHandler('PostBuilder', post_builder)
-    sending_handler = CommandHandler('sending', sending)
+    #sending_handler = CommandHandler('sending', sending)
     # group_sending_handler = CommandHandler('group', post_builder)
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
@@ -336,7 +359,7 @@ if __name__ == '__main__':
     application.add_handler(start_handler)
 
     application.add_handler(post_builder_handler)
-    application.add_handler(sending_handler)
+    #application.add_handler(sending_handler)
 
     # application.add_handler(group_sending_handler)
 
