@@ -106,8 +106,10 @@ class ResponseManager:
         response = Dictionary.response_to_invitation_true
 
         bdConnector.set_user_invitation_status(1, self.user_id)
+        bdConnector.add_user_in_post()
 
         result = random.choice(response)
+
         return result
 
     def response_to_invitation_false(self):

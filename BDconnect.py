@@ -135,6 +135,14 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def break_invitation_status(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE User
+                       SET invitation_status = 0
+                       WHERE invitation_status = 1;""")
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def check_user(self, user_id):
         cursor = self.sqlite_connection.cursor()
         sql_req = 'SELECT * FROM User where user_id = %s' % str(user_id)
@@ -245,6 +253,15 @@ class BDconnect:
                                WHERE user_id = ?;""", data)
         self.sqlite_connection.commit()
         cursor.close()
+
+    def add_user_in_post(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""UPDATE Post
+                       SET count_user_will_be = count_user_will_be + 1
+                       WHERE active_post = 1""")
+        self.sqlite_connection.commit()
+        cursor.close()
+
 
     def test(self):
         user_id = 490466369
