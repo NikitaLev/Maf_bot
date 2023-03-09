@@ -105,8 +105,11 @@ class ResponseManager:
     def response_to_invitation_true(self):
         response = Dictionary.response_to_invitation_true
 
+        if bdConnector.check_user_invitation_status(self.user_id) != 1:
+            bdConnector.add_user_in_post()
+
         bdConnector.set_user_invitation_status(1, self.user_id)
-        bdConnector.add_user_in_post()
+
 
         result = random.choice(response)
 
@@ -114,12 +117,20 @@ class ResponseManager:
 
     def response_to_invitation_false(self):
         response = Dictionary.response_to_invitation_false
+
+        if bdConnector.check_user_invitation_status(self.user_id) == 1:
+            bdConnector.delete_user_in_post()
+
         bdConnector.set_user_invitation_status(0, self.user_id)
         result = random.choice(response)
         return result
 
     def response_to_invitation_question(self):
         response = Dictionary.response_to_invitation_question
+
+        if bdConnector.check_user_invitation_status(self.user_id) == 1:
+            bdConnector.delete_user_in_post()
+
         bdConnector.set_user_invitation_status(2, self.user_id)
         result = random.choice(response)
         return result
@@ -130,6 +141,20 @@ class ResponseManager:
         result = random.choice(response) % name
         return result
 
+    def who_marked(self):
+        response = Dictionary.response_who_marked
+        result = random.choice(response)
 
+        list_true = bdConnector.who_marked_true()
+        count = 1
+        for user in list_true:
+            result += str(count) + '. ' + user[0] + '\n'
+            count += 1
 
+        result += '\n'
 
+        list_maybe = bdConnector.who_marked_maybe()
+        for user in list_maybe:
+            result += '? ' + user[0] + '\n'
+
+        return result
