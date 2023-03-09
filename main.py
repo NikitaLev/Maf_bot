@@ -169,22 +169,23 @@ def post_creator(data):
 
 
 async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    active_post_list = bdConnect.get_actove_post_list()
     query = update.callback_query
     variant = query.data
-    print('query', query)
-    print('variant', variant)
-    print('variant', query.message)
-    template = ''
-
-    responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
-    if variant == '+':
-        template = responseManager.response_to_invitation_true()
-    elif variant == '-':
-        template = responseManager.response_to_invitation_false()
+    if len(active_post_list) == 1:
+        template = ''
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        if variant == '+':
+            template = responseManager.response_to_invitation_true()
+        elif variant == '-':
+            template = responseManager.response_to_invitation_false()
+        else:
+            template = responseManager.response_to_invitation_question()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
     else:
-        template = responseManager.response_to_invitation_question()
-    await context.bot.send_message(chat_id=responseManager.user_id, text=template)
-
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        template = responseManager.all_post_deactife()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
 
 """    await query.answer()
     await query.edit_message_text(text=f"Выбранный вариант: {variant}")

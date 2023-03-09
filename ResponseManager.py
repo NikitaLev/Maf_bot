@@ -158,3 +158,8 @@ class ResponseManager:
             result += '? ' + user[0] + '\n'
 
         return result
+
+    def all_post_deactife(self):
+        response = Dictionary.all_post_deactife
+        result = random.choice(response)
+        return result
