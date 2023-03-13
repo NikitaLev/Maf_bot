@@ -175,9 +175,18 @@ class ResponseManager:
 
         list_true = bdConnector.who_marked_true()
         count = 1
+
+        result += '\n'
+
         for user in list_true:
             result += str(count) + '. ' + user[0] + '\n'
             count += 1
+
+        result += '\n'
+
+        list_maybe = bdConnector.who_marked_in_time()
+        for user in list_maybe:
+            result += user[1] + ' ~ ' + user[0] + '\n'
 
         result += '\n'
 

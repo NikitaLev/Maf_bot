@@ -320,6 +320,14 @@ class BDconnect:
         cursor.close()
         return res
 
+    def who_marked_in_time(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT mafia_name, arrives_time FROM User where invitation_status = 4'
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        cursor.close()
+        return res
+
     def check_user_invitation_status(self, user_id):
         cursor = self.sqlite_connection.cursor()
         sql_req = 'SELECT invitation_status FROM User where user_id = ' + str(user_id)
