@@ -41,6 +41,7 @@ class ResponseManager:
         bdConnector.deactivation_post(post_id=self.user_post)
         #bdConnector.deactivation_all_post()
         bdConnector.break_user_post(user_id=self.user_id)
+        bdConnector.break_user_status_invitation()
         self.set_user_state(1)
         result = random.choice(response)
         return result

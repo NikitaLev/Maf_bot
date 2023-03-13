@@ -137,6 +137,16 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def break_user_status_invitation(self):
+        cursor = self.sqlite_connection.cursor()
+        data = (0, 0)
+        cursor.execute("""UPDATE User
+                       SET invitation_status = ?, arrives_time = ?
+                       WHERE invitation_status != 0;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+
     def break_invitation_status(self):
         cursor = self.sqlite_connection.cursor()
         cursor.execute("""UPDATE User
