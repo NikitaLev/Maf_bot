@@ -18,6 +18,7 @@ class ResponseManager:
         self.photo_id = photo_id
         self.user_name_mf = self.get_user_name_mf()
         self.user_state = self.get_state_user()
+        self.user_invitation_state = self.get_invitation_state_user()
         self.super_user = self.get_user_lvl()
         self.user_post = 0
         if self.super_user and self.user_state > 3:
@@ -38,6 +39,7 @@ class ResponseManager:
     def deactivation_post_user(self):
         response = Dictionary.deactivation_post
         bdConnector.deactivation_post(post_id=self.user_post)
+        #bdConnector.deactivation_all_post()
         bdConnector.break_user_post(user_id=self.user_id)
         self.set_user_state(1)
         result = random.choice(response)
@@ -66,6 +68,9 @@ class ResponseManager:
 
     def get_state_user(self):
         return int(bdConnector.get_user_state(self.user_id))
+
+    def get_invitation_state_user(self):
+        return int(bdConnector.get_user_invitation_state(self.user_id))
 
     def get_user_name_mf(self):
         return bdConnector.get_user_name_mf(self.user_id)
@@ -105,11 +110,11 @@ class ResponseManager:
     def response_to_invitation_true(self):
         response = Dictionary.response_to_invitation_true
 
-        if bdConnector.check_user_invitation_status(self.user_id) != 1:
+        if bdConnector.check_user_invitation_status(self.user_id) != 1 and \
+                bdConnector.check_user_invitation_status(self.user_id) != 4:
             bdConnector.add_user_in_post()
 
         bdConnector.set_user_invitation_status(1, self.user_id)
-
 
         result = random.choice(response)
 
@@ -118,17 +123,40 @@ class ResponseManager:
     def response_to_invitation_false(self):
         response = Dictionary.response_to_invitation_false
 
-        if bdConnector.check_user_invitation_status(self.user_id) == 1:
+        if bdConnector.check_user_invitation_status(self.user_id) == 1 or \
+                bdConnector.check_user_invitation_status(self.user_id) == 4:
             bdConnector.delete_user_in_post()
 
         bdConnector.set_user_invitation_status(0, self.user_id)
         result = random.choice(response)
         return result
 
+    def response_to_invitation_in_time(self):
+        response = Dictionary.waiting_time_invitation
+
+        bdConnector.set_user_invitation_status(3, self.user_id)
+        result = random.choice(response)
+        return result
+
+    def response_to_invitation_set_time(self):
+        response = Dictionary.set_time_invitation
+
+        if bdConnector.check_user_invitation_status(self.user_id) != 1 and \
+                bdConnector.check_user_invitation_status(self.user_id) != 4:
+            bdConnector.add_user_in_post()
+
+        bdConnector.set_user_time_invitation(time=self.message, user_id=self.user_id)
+
+        bdConnector.set_user_invitation_status(4, self.user_id)
+
+        result = random.choice(response) % self.message
+        return result
+
     def response_to_invitation_question(self):
         response = Dictionary.response_to_invitation_question
 
-        if bdConnector.check_user_invitation_status(self.user_id) == 1:
+        if bdConnector.check_user_invitation_status(self.user_id) == 1 or \
+                bdConnector.check_user_invitation_status(self.user_id) == 4:
             bdConnector.delete_user_in_post()
 
         bdConnector.set_user_invitation_status(2, self.user_id)
