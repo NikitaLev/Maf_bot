@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import sqlite3
 from uuid import uuid4
 import os
@@ -45,22 +46,36 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo ', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     recognize_result = recognize_cmd(responseManager.message)
+    if responseManager.user_invitation_state == 3:
+        time = get_time_invitation(responseManager.message)
+
+        response = ''
+        if not time in Dictionary.error_time_invitation.keys():
+            response = responseManager.response_to_invitation_set_time()
+        else:
+            response = Dictionary.error_time_invitation.get(time)
+            response = random.choice(response)
+
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
+        return
+
     if recognize_result['cmd'] == "who_marked" and recognize_result['percent'] > 50:
         response = responseManager.who_marked()
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=response)
-        print(1)
         return
     if responseManager.super_user:
-        print(2)
         if responseManager.user_state == 4:  # ожидание текста поста
             response = responseManager.add_text_in_post()
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
+            return
             # bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
         elif responseManager.user_state == 5:
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text='Требуется фото')
+            return
         elif responseManager.user_state == 6:
 
             text_data = ''
@@ -103,8 +118,9 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await context.bot.send_message(chat_id=responseManager.user_id,
                                            text=response)
+            return
         elif responseManager.user_state == 7:
-            if recognize_result['cmd'] == "deactivation_post"\
+            if recognize_result['cmd'] == "deactivation_post" \
                     and recognize_result['percent'] > 50:
                 response = responseManager.generate_response_no_name()
                 responseManager.deactivation_post_user()
@@ -116,6 +132,19 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=response)
 
+
+def get_time_invitation(time):
+    if ':' in time:
+        h, m = time.split(':')
+        if h.isdigit():
+            if m.isdigit():
+                return time
+            else:
+                return 'M'
+        else:
+            return 'H'
+    else:
+        return ':'
 
 
 def recognize_cmd(cmd: str):
@@ -135,12 +164,19 @@ def post_creator(data):
     keyboard = [
         [InlineKeyboardButton("Приду на игры", callback_data='+')],
         [InlineKeyboardButton("В следующий раз", callback_data='-')],
-        [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+        [InlineKeyboardButton("Пока не знаю", callback_data='?'),
+         InlineKeyboardButton("Опоздаю", callback_data='time')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if data:
         return data[3], data[4], reply_markup
 
+
+"""    keyboard = [
+        [InlineKeyboardButton("Приду на игры", callback_data='+')],
+        [InlineKeyboardButton("В следующий раз", callback_data='-')],
+        [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+    ]"""
 
 """async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
@@ -179,6 +215,8 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
             template = responseManager.response_to_invitation_true()
         elif variant == '-':
             template = responseManager.response_to_invitation_false()
+        elif variant == 'time':
+            template = responseManager.response_to_invitation_in_time()
         else:
             template = responseManager.response_to_invitation_question()
         await context.bot.send_message(chat_id=responseManager.user_id, text=template)
@@ -186,6 +224,7 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
         responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
         template = responseManager.all_post_deactife()
         await context.bot.send_message(chat_id=responseManager.user_id, text=template)
+
 
 """    await query.answer()
     await query.edit_message_text(text=f"Выбранный вариант: {variant}")
@@ -290,15 +329,19 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def test_mod():
     # bdConnect.get_post(1)
     # bdConnect.set_super_user_level(490466369)
-    #bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
-    bdConnect.test(user_id=11111, test_P=2)
-    #list = bdConnect.who_marked_true()
-    #lis1t = bdConnect.who_marked_true()[0]
-    #lis1t2 = lis1t[0]
-    #bdConnect.deactivation_app_post()
-
-    print(len(bdConnect.get_actove_post_list()) == 0)
+    # bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
+    #bdConnect.deactivation_all_post()
+    #bdConnect.set_user_invitation_status(0, 490466369)
+    #bdConnect.set_user_state(1, 490466369)
+    #bdConnect.test_del_user_bd(11111)
+    #bdConnect.test(user_id=11111, test_P=2)
+    # list = bdConnect.who_marked_true()
+    # lis1t = bdConnect.who_marked_true()[0]
+    # lis1t2 = lis1t[0]
+    # bdConnect.deactivation_app_post()
     """
+    print(len(bdConnect.get_actove_post_list()) == 0)
+    
     print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
     print(Dictionary.UserState)
@@ -348,7 +391,7 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
 
     post_builder_handler = CommandHandler('PostBuilder', post_builder)
-    #sending_handler = CommandHandler('sending', sending)
+    # sending_handler = CommandHandler('sending', sending)
     # group_sending_handler = CommandHandler('group', post_builder)
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
@@ -359,7 +402,7 @@ if __name__ == '__main__':
     application.add_handler(start_handler)
 
     application.add_handler(post_builder_handler)
-    #application.add_handler(sending_handler)
+    # application.add_handler(sending_handler)
 
     # application.add_handler(group_sending_handler)
 

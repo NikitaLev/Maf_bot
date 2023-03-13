@@ -11,12 +11,12 @@ class BDconnect:
         self.sqlite_connection = sqlite3.connect(self.db_manager.name_bd)
 
     def insert_user(self, name, user_id, mafia_name):
-        user = (name, user_id, mafia_name, 0, '', 0, True, False, False, 0)
+        user = (name, user_id, mafia_name, 0, '', 0, True, False, False, '', 0)
         if len(self.check_user(user_id)) == 0:
             cursor = self.sqlite_connection.cursor()
             cursor.execute("INSERT INTO User (name, user_id, mafia_name, state, message_history, id_last_message, "
-                           "sending_message, super_user, invitation_status, id_post_create)"
-                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
+                           "sending_message, super_user, invitation_status, arrives_time, id_post_create)"
+                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", user)
             self.sqlite_connection.commit()
             cursor.close()
 
@@ -101,9 +101,10 @@ class BDconnect:
     def get_post(self, post_id):
         cursor = self.sqlite_connection.cursor()
         print('post_id', post_id, type(post_id))
+        data = (post_id, )
         sql_req = 'SELECT * FROM Post'
         cursor.execute("""SELECT * FROM Post
-                       WHERE id =? """, str(post_id))
+                       WHERE id =? """, data)
         res = cursor.fetchall()
         res1 = res[0]
         cursor.close()
@@ -111,13 +112,14 @@ class BDconnect:
 
     def deactivation_post(self, post_id):
         cursor = self.sqlite_connection.cursor()
+        data = (post_id, )
         cursor.execute("""UPDATE Post
                        SET active_post = 0
-                       WHERE id = ?""", str(post_id))
+                       WHERE id = ?""", data)
         self.sqlite_connection.commit()
         cursor.close()
 
-    def deactivation_app_post(self):
+    def deactivation_all_post(self):
         cursor = self.sqlite_connection.cursor()
         cursor.execute("""UPDATE Post
                        SET active_post = 0
@@ -179,13 +181,23 @@ class BDconnect:
         cursor.close()
         return res
 
+    def get_user_invitation_state(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT invitation_status FROM User where user_id = %s' % str(user_id)
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        res1 = res[0]
+        res = res1[0]
+        cursor.close()
+        return res
+
     def set_user_state(self, user_id, state):
         cursor = self.sqlite_connection.cursor()
         data = (state, user_id)
         cursor.execute("""UPDATE User
                        SET state = ?
                        WHERE user_id = ?;""", data)
-        print('get_user_state ', self.get_user_state(user_id))
+        #print('get_user_state ', self.get_user_state(user_id))
         self.sqlite_connection.commit()
         cursor.close()
 
@@ -254,6 +266,16 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def set_user_time_invitation(self, time, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (time, user_id)
+        print('data', data)
+        cursor.execute("""UPDATE User
+                               SET arrives_time = ?
+                               WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def add_user_in_post(self):
         cursor = self.sqlite_connection.cursor()
         cursor.execute("""UPDATE Post
@@ -313,3 +335,12 @@ class BDconnect:
                        WHERE active_post = 1""")
         self.sqlite_connection.commit()
         cursor.close()
+
+    def test_del_user_bd(self, user_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (user_id, )
+        cursor.execute("""DELETE FROM User
+                               WHERE user_id = ?;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
