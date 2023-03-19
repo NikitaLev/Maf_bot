@@ -137,6 +137,15 @@ class BDconnect:
         self.sqlite_connection.commit()
         cursor.close()
 
+    def break_user_status_invitation(self):
+        cursor = self.sqlite_connection.cursor()
+        data = (0, 0)
+        cursor.execute("""UPDATE User
+                       SET invitation_status = ?, arrives_time = ?
+                       WHERE invitation_status != 0;""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
     def break_invitation_status(self):
         cursor = self.sqlite_connection.cursor()
         cursor.execute("""UPDATE User
@@ -315,6 +324,14 @@ class BDconnect:
     def who_marked_maybe(self):
         cursor = self.sqlite_connection.cursor()
         sql_req = 'SELECT mafia_name FROM User where invitation_status = 2'
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        cursor.close()
+        return res
+
+    def who_marked_in_time(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT mafia_name, arrives_time FROM User where invitation_status = 4'
         cursor.execute(sql_req)
         res = cursor.fetchall()
         cursor.close()

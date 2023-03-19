@@ -41,6 +41,7 @@ class ResponseManager:
         bdConnector.deactivation_post(post_id=self.user_post)
         #bdConnector.deactivation_all_post()
         bdConnector.break_user_post(user_id=self.user_id)
+        bdConnector.break_user_status_invitation()
         self.set_user_state(1)
         result = random.choice(response)
         return result
@@ -175,9 +176,18 @@ class ResponseManager:
 
         list_true = bdConnector.who_marked_true()
         count = 1
+
+        result += '\n'
+
         for user in list_true:
             result += str(count) + '. ' + user[0] + '\n'
             count += 1
+
+        result += '\n'
+
+        list_maybe = bdConnector.who_marked_in_time()
+        for user in list_maybe:
+            result += user[1] + ' ~ ' + user[0] + '\n'
 
         result += '\n'
 

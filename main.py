@@ -110,7 +110,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 template = text_data
                 # await context.bot.send_message(chat_id=id,text=template)
 
-                await context.bot.send_photo(chat_id=update.effective_chat.id,
+                await context.bot.send_photo(chat_id=responseMan.user_id,
                                              photo=photo_data)
                 await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
@@ -327,19 +327,21 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def test_mod():
+    bdConnect.test_del_user_bd(11111)
+    #bdConnect.test_del_user_bd(22222)
     # bdConnect.get_post(1)
     # bdConnect.set_super_user_level(490466369)
-    # bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")
+"""    bdConnect.insert_user(name='test1', user_id=11111, mafia_name="test1")
+    bdConnect.test(user_id=11111, test_P=1)
+    bdConnect.insert_user(name='test2', user_id=22222, mafia_name="test2")
+    bdConnect.test(user_id=22222, test_P=2)
     #bdConnect.deactivation_all_post()
     #bdConnect.set_user_invitation_status(0, 490466369)
     #bdConnect.set_user_state(1, 490466369)
-    #bdConnect.test_del_user_bd(11111)
-    #bdConnect.test(user_id=11111, test_P=2)
     # list = bdConnect.who_marked_true()
     # lis1t = bdConnect.who_marked_true()[0]
     # lis1t2 = lis1t[0]
     # bdConnect.deactivation_app_post()
-    """
     print(len(bdConnect.get_actove_post_list()) == 0)
     
     print(Dictionary.response_template_in_state)
