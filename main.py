@@ -110,7 +110,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 template = text_data
                 # await context.bot.send_message(chat_id=id,text=template)
 
-                await context.bot.send_photo(chat_id=update.effective_chat.id,
+                await context.bot.send_photo(chat_id=responseMan.user_id,
                                              photo=photo_data)
                 await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
