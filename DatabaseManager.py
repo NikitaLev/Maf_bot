@@ -8,6 +8,7 @@ class DatabaseManager:
         self.name_bd = Data_file.NameDB
         self.sqlite_connection = sqlite3.connect(self.name_bd)
         self.create_db()
+        #self.extension_bd()
 
     def create_db(self):
         cursor = self.sqlite_connection.cursor()
@@ -23,6 +24,7 @@ class DatabaseManager:
                         sending_message NUMERIC,
                         super_user NUMERIC,
                         invitation_status INTEGER,
+                        arrives_time TEXT
                         id_post_create INTEGER)
                     """)
 
@@ -38,5 +40,11 @@ class DatabaseManager:
                         text_post TEXT,
                         photo_id INTEGER,
                         count_user_will_be INTEGER)
+                    """)
+        cursor.close()
+
+    def extension_bd(self):
+        cursor = self.sqlite_connection.cursor()
+        cursor.execute("""ALTER TABLE User ADD COLUMN arrives_time TEXT DEFAULT '0'
                     """)
         cursor.close()

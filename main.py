@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import sqlite3
 from uuid import uuid4
 import os
@@ -10,6 +11,7 @@ from telegram.ext import filters, MessageHandler, CallbackQueryHandler, Applicat
 import Data_file
 import base64
 
+from fuzzywuzzy import fuzz
 from BDconnect import BDconnect
 from ResponseManager import ResponseManager
 from SendingMessagesManager import SendingMessagesManager
@@ -41,22 +43,66 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print('echo', update.message.text)
+    print('echo ', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
+    recognize_result = recognize_cmd(responseManager.message)
+    if responseManager.user_invitation_state == 3:
+        time = get_time_invitation(responseManager.message)
+
+        response = ''
+        if not time in Dictionary.error_time_invitation.keys():
+            response = responseManager.response_to_invitation_set_time()
+        else:
+            response = Dictionary.error_time_invitation.get(time)
+            response = random.choice(response)
+
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
+        return
+
+    if recognize_result['cmd'] == "who_marked" and recognize_result['percent'] > 50:
+        response = responseManager.who_marked()
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=response)
+        return
     if responseManager.super_user:
         if responseManager.user_state == 4:  # ожидание текста поста
             response = responseManager.add_text_in_post()
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
-            #bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
+            return
+            # bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
         elif responseManager.user_state == 5:
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text='Требуется фото')
+            return
         elif responseManager.user_state == 6:
-            text_data, photo_data = post_creator(bdConnect.get_post(responseManager.message))
+
+            text_data = ''
+            photo_data = ''
+            reply_markup = ''
+            if responseManager.message.isdigit():
+                text_data, photo_data, reply_markup = post_creator(bdConnect.get_post(responseManager.message))
+                responseManager.set_user_state(7)
+            else:
+                if (recognize_result['cmd'] == "sending_command" or recognize_result['cmd'] == "yes") \
+                        and recognize_result['percent'] > 50:
+                    text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
+                    responseManager.set_user_state(7)
+                elif (recognize_result['cmd'] == "not" or recognize_result['cmd'] == "deactivation_post") \
+                        and recognize_result['percent'] > 50:
+                    response = responseManager.deactivation_post_user()
+                    await context.bot.send_message(chat_id=responseManager.user_id,
+                                                   text=response)
+                    return 0
+                else:
+                    response = responseManager.not_recognized_text()
+                    await context.bot.send_message(chat_id=responseManager.user_id,
+                                                   text=response)
+                    return 0
+
             sendingMessagesManager = SendingMessagesManager()
             list_user_for_sending = sendingMessagesManager.user_sending
-
             for user in list_user_for_sending:
                 responseMan = ResponseManager(user_id=user[1], message=update.message.text)
                 responseMan.response_to_invitation_question()
@@ -64,14 +110,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 template = text_data
                 # await context.bot.send_message(chat_id=id,text=template)
 
-                keyboard = [
-                    [InlineKeyboardButton("Приду на игры", callback_data='+')],
-                    [InlineKeyboardButton("В следующий раз", callback_data='-')],
-                    [InlineKeyboardButton("Пока не знаю", callback_data='?')]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-
-                await context.bot.send_photo(chat_id=update.effective_chat.id,
+                await context.bot.send_photo(chat_id=responseMan.user_id,
                                              photo=photo_data)
                 await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
@@ -79,7 +118,14 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await context.bot.send_message(chat_id=responseManager.user_id,
                                            text=response)
-
+            return
+        elif responseManager.user_state == 7:
+            if recognize_result['cmd'] == "deactivation_post" \
+                    and recognize_result['percent'] > 50:
+                response = responseManager.generate_response_no_name()
+                responseManager.deactivation_post_user()
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text=response)
     else:
         response = responseManager.generate_response_with_name()
 
@@ -87,12 +133,52 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text=response)
 
 
+def get_time_invitation(time):
+    if ':' in time:
+        h, m = time.split(':')
+        if h.isdigit():
+            if m.isdigit():
+                return time
+            else:
+                return 'M'
+        else:
+            return 'H'
+    else:
+        return ':'
+
+
+def recognize_cmd(cmd: str):
+    rc = {'cmd': '', 'percent': 0}
+    for c, v in Dictionary.VA_CMD_LIST.items():
+        for x in v:
+            # print('rc', rc)
+            vrt = fuzz.ratio(cmd, x)
+            # print(x + ' x = '+str(vrt))
+            if vrt > rc['percent']:
+                rc['cmd'] = c
+                rc['percent'] = vrt
+    return rc
+
+
 def post_creator(data):
+    keyboard = [
+        [InlineKeyboardButton("Приду на игры", callback_data='+')],
+        [InlineKeyboardButton("В следующий раз", callback_data='-')],
+        [InlineKeyboardButton("Пока не знаю", callback_data='?'),
+         InlineKeyboardButton("Опоздаю", callback_data='time')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     if data:
-        return data[3], data[4]
+        return data[3], data[4], reply_markup
 
 
-async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+"""    keyboard = [
+        [InlineKeyboardButton("Приду на игры", callback_data='+')],
+        [InlineKeyboardButton("В следующий раз", callback_data='-')],
+        [InlineKeyboardButton("Пока не знаю", callback_data='?')]
+    ]"""
+
+"""async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
         sendingMessagesManager = SendingMessagesManager()
@@ -105,12 +191,6 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
             template = sendingMessagesManager.get_template_sending_with_name() % responseMan.user_name_mf
             # await context.bot.send_message(chat_id=id,text=template)
 
-            keyboard = [
-                [InlineKeyboardButton("Приду на игры", callback_data='+')],
-                [InlineKeyboardButton("В следующий раз", callback_data='-')],
-                [InlineKeyboardButton("Пока не знаю", callback_data='?')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
 
             await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
@@ -121,25 +201,29 @@ async def sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         response = responseManager.generate_response_for_default_user_sending(name=responseManager.user_name_mf)
         await context.bot.send_message(chat_id=responseManager.user_id,
-                                       text=response)
+                                       text=response)"""
 
 
 async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    active_post_list = bdConnect.get_actove_post_list()
     query = update.callback_query
     variant = query.data
-    print('query', query)
-    print('variant', variant)
-    print('variant', query.message)
-    template = ''
-
-    responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
-    if variant == '+':
-        template = responseManager.response_to_invitation_true()
-    elif variant == '-':
-        template = responseManager.response_to_invitation_false()
+    if len(active_post_list) == 1:
+        template = ''
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        if variant == '+':
+            template = responseManager.response_to_invitation_true()
+        elif variant == '-':
+            template = responseManager.response_to_invitation_false()
+        elif variant == 'time':
+            template = responseManager.response_to_invitation_in_time()
+        else:
+            template = responseManager.response_to_invitation_question()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
     else:
-        template = responseManager.response_to_invitation_question()
-    await context.bot.send_message(chat_id=responseManager.user_id, text=template)
+        responseManager = ResponseManager(user_id=update.effective_user.id, message=variant)
+        template = responseManager.all_post_deactife()
+        await context.bot.send_message(chat_id=responseManager.user_id, text=template)
 
 
 """    await query.answer()
@@ -151,13 +235,19 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    responseManager = ResponseManager(user_id=update.effective_user.id, message='-', photo_id=update.message.photo[0].file_id)
+    responseManager = ResponseManager(user_id=update.effective_user.id, message='-',
+                                      photo_id=update.message.photo[0].file_id)
     if responseManager.super_user:
         if responseManager.user_state == 4:  # ожидание текста поста
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text='Требуется текст!')
         elif responseManager.user_state == 5:
             response = responseManager.add_image_id_in_post()
+            text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
+            await context.bot.send_photo(chat_id=update.effective_chat.id,
+                                         photo=photo_data)
+            await context.bot.send_message(chat_id=responseManager.user_id, text=text_data, reply_markup=reply_markup)
+
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
 
@@ -206,6 +296,7 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if responseManager.get_user_lvl():
         responseManager.set_user_state(4)
 
+
 """        sendingMessagesManager = SendingMessagesManager()
         list_user_for_sending = sendingMessagesManager.user_sending
 
@@ -236,9 +327,26 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def test_mod():
-    #bdConnect.get_post(1)
-    bdConnect.set_super_user_level(490466369)
-    """
+    bdConnect.test_del_user_bd(299686106)
+    #bdConnect.test_del_user_bd(451591039)
+
+    #bdConnect.test_del_user_bd(22222)
+
+    # bdConnect.get_post(1)
+    # bdConnect.set_super_user_level(490466369)
+"""    bdConnect.insert_user(name='test1', user_id=11111, mafia_name="test1")
+    bdConnect.test(user_id=11111, test_P=1)
+    bdConnect.insert_user(name='test2', user_id=22222, mafia_name="test2")
+    bdConnect.test(user_id=22222, test_P=2)
+    #bdConnect.deactivation_all_post()
+    #bdConnect.set_user_invitation_status(0, 490466369)
+    #bdConnect.set_user_state(1, 490466369)
+    # list = bdConnect.who_marked_true()
+    # lis1t = bdConnect.who_marked_true()[0]
+    # lis1t2 = lis1t[0]
+    # bdConnect.deactivation_app_post()
+    print(len(bdConnect.get_actove_post_list()) == 0)
+    
     print(Dictionary.response_template_in_state)
     print(Dictionary.response_template_in_state.get(0))
     print(Dictionary.UserState)
@@ -258,19 +366,26 @@ def test_mod():
     sendingMessagesManager = SendingMessagesManager()
 
     test = test()
-    asyncio.run(test)
-    bdConnect.insert_user(name='tttt', user_id=11111, mafia_name="test")    490466369
+    asyncio.run(test)    490466369
 """
 
 
+# создание поста
 async def post_builder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
-        responseManager.add_new_post()
-        response = responseManager.generate_response_no_name()
-        await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=response)
+        active_post_list = bdConnect.get_actove_post_list()
+        if len(active_post_list) == 0:
+            responseManager.add_new_post()
+            response = responseManager.generate_response_no_name()
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
+        else:
+            user_id_active_post = active_post_list[0][0]
+            response = responseManager.response_have_active_post(user_id=user_id_active_post)
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=response)
 
 
 if __name__ == '__main__':
@@ -281,8 +396,8 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
 
     post_builder_handler = CommandHandler('PostBuilder', post_builder)
-    sending_handler = CommandHandler('sending', sending)
-    #group_sending_handler = CommandHandler('group', post_builder)
+    # sending_handler = CommandHandler('sending', sending)
+    # group_sending_handler = CommandHandler('group', post_builder)
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
@@ -292,9 +407,9 @@ if __name__ == '__main__':
     application.add_handler(start_handler)
 
     application.add_handler(post_builder_handler)
-    application.add_handler(sending_handler)
+    # application.add_handler(sending_handler)
 
-    #application.add_handler(group_sending_handler)
+    # application.add_handler(group_sending_handler)
 
     application.add_handler(echo_handler)
     application.add_handler(photo_handler)
