@@ -327,8 +327,11 @@ async def group_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def test_mod():
-    bdConnect.test_del_user_bd(11111)
+    bdConnect.test_del_user_bd(299686106)
+    #bdConnect.test_del_user_bd(451591039)
+
     #bdConnect.test_del_user_bd(22222)
+
     # bdConnect.get_post(1)
     # bdConnect.set_super_user_level(490466369)
 """    bdConnect.insert_user(name='test1', user_id=11111, mafia_name="test1")

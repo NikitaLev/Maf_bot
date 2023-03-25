@@ -135,6 +135,10 @@ class ResponseManager:
     def response_to_invitation_in_time(self):
         response = Dictionary.waiting_time_invitation
 
+        if bdConnector.check_user_invitation_status(self.user_id) == 1 or \
+                bdConnector.check_user_invitation_status(self.user_id) == 4:
+            bdConnector.delete_user_in_post()
+
         bdConnector.set_user_invitation_status(3, self.user_id)
         result = random.choice(response)
         return result
