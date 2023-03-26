@@ -50,7 +50,7 @@ class ResponseManager:
 
     def deactivation_last_post(self):
         response = Dictionary.deactivation_post
-        bdConnector.deactivation_last_post(bdConnector.get_last_id_post())
+        bdConnector.deactivation_last_post(bdConnector.get_id_last_active_post())
         bdConnector.break_user_post(user_id=self.user_id)
         bdConnector.break_user_status_invitation()
         self.set_user_state(1)

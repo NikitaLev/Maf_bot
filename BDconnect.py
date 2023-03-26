@@ -46,6 +46,25 @@ class BDconnect:
         cursor.close()
         return res
 
+    def get_id_last_active_post(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = """SELECT
+                          id
+                        FROM
+                          Post
+                        WHERE
+                            active_post=1
+                        ORDER BY
+                          id DESC
+                        LIMIT 1"""
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        res1 = res[0]
+        res = res1[0]
+        print(res)
+        cursor.close()
+        return res
+
     def get_active_post_list(self):
         cursor = self.sqlite_connection.cursor()
         sql_req = """SELECT
