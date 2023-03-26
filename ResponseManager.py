@@ -38,13 +38,36 @@ class ResponseManager:
 
     def deactivation_post_user(self):
         response = Dictionary.deactivation_post
-        bdConnector.deactivation_post(post_id=self.user_post)
-        #bdConnector.deactivation_all_post()
+        if self.user_post == 0:
+            self.all_post_deactife()
+        else:
+            bdConnector.deactivation_post(post_id=self.user_post)
+            bdConnector.break_user_post(user_id=self.user_id)
+        bdConnector.break_user_status_invitation()
+        self.set_user_state(1)
+        result = random.choice(response)
+        return result
+
+    def deactivation_last_post(self):
+        response = Dictionary.deactivation_post
+        bdConnector.deactivation_last_post(bdConnector.get_id_last_active_post())
         bdConnector.break_user_post(user_id=self.user_id)
         bdConnector.break_user_status_invitation()
         self.set_user_state(1)
         result = random.choice(response)
         return result
+
+    def deactivation_info_post_user(self):
+        response = Dictionary.deactivation_post
+        bdConnector.deactivation_post(post_id=self.user_post, post_type=1)
+        bdConnector.break_user_post(user_id=self.user_id)
+        self.set_user_state(1)
+        result = random.choice(response)
+        return result
+
+    def get_user_post_type(self):
+        type_post = bdConnector.get_type_post(post_id=self.user_post)
+        return type_post
 
     def add_text_in_post(self):
         bdConnector.add_text_in_post(self.message, self.user_post)
@@ -56,8 +79,8 @@ class ResponseManager:
         self.set_user_state(6)
         return self.generate_response_no_name() + str(self.user_post)
 
-    def add_new_post(self):
-        bdConnector.insert_post(self.user_id)
+    def add_new_post(self, post_type):
+        bdConnector.insert_post(self.user_id, post_type)
         self.set_user_state(4)
         return self.generate_response_no_name()
 

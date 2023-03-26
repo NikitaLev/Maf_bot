@@ -39,12 +39,12 @@ class DatabaseManager:
                         user_id INTEGER,
                         text_post TEXT,
                         photo_id INTEGER,
-                        count_user_will_be INTEGER)
+                        count_user_will_be INTEGER,
+                        post_type NUMERIC)
                     """)
         cursor.close()
 
     def extension_bd(self):
         cursor = self.sqlite_connection.cursor()
-        cursor.execute("""ALTER TABLE User ADD COLUMN arrives_time TEXT DEFAULT '0'
-                    """)
+        cursor.execute("""ALTER TABLE Post ADD COLUMN post_type NUMERIC DEFAULT 0""")
         cursor.close()
