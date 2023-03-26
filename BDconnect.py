@@ -20,11 +20,11 @@ class BDconnect:
             self.sqlite_connection.commit()
             cursor.close()
 
-    def insert_post(self, user_id):
-        post = (1, user_id, '-', '-', 0)
+    def insert_post(self, user_id, post_type):
+        post = (1, user_id, '-', '-', 0, post_type)
         cursor = self.sqlite_connection.cursor()
-        cursor.execute("INSERT INTO Post (active_post, user_id, text_post, photo_id, count_user_will_be) "
-                       "VALUES (?, ?, ?, ?, ?)", post)
+        cursor.execute("INSERT INTO Post (active_post, user_id, text_post, photo_id, count_user_will_be, post_type) "
+                       "VALUES (?, ?, ?, ?, ?, ?)", post)
         self.sqlite_connection.commit()
         cursor.close()
         self.add_post_for_user(user_id, self.get_last_id_post())
@@ -46,7 +46,7 @@ class BDconnect:
         cursor.close()
         return res
 
-    def get_actove_post_list(self):
+    def get_active_post_list(self):
         cursor = self.sqlite_connection.cursor()
         sql_req = """SELECT
                           user_id
@@ -54,6 +54,33 @@ class BDconnect:
                           Post
                         WHERE
                         active_post = 1
+                        ORDER BY
+                          id DESC
+                        LIMIT 1"""
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        return res
+
+    def get_type_post(self, post_id):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = 'SELECT post_type FROM Post where id = %s' % str(post_id)
+        cursor.execute(sql_req)
+        res = cursor.fetchall()
+        res1 = res[0]
+        res = res1[0]
+        cursor.close()
+        return res
+
+    def get_active_info_post_list(self):
+        cursor = self.sqlite_connection.cursor()
+        sql_req = """SELECT
+                          user_id
+                        FROM
+                          Post
+                        WHERE
+                            active_post = 1 
+                            AND
+                            post_type = 1
                         ORDER BY
                           id DESC
                         LIMIT 1"""
@@ -110,11 +137,21 @@ class BDconnect:
         cursor.close()
         return res1
 
-    def deactivation_post(self, post_id):
+    def deactivation_post(self, post_id, post_type=0):
+        print('deactivation_post', post_id, post_type)
         cursor = self.sqlite_connection.cursor()
-        data = (post_id, )
+        data = (post_id, post_type)
         cursor.execute("""UPDATE Post
                        SET active_post = 0
+                       WHERE id = ? AND post_type = ?""", data)
+        self.sqlite_connection.commit()
+        cursor.close()
+
+    def deactivation_last_post(self, post_id):
+        cursor = self.sqlite_connection.cursor()
+        data = (0, post_id)
+        cursor.execute("""UPDATE Post
+                       SET active_post = ?
                        WHERE id = ?""", data)
         self.sqlite_connection.commit()
         cursor.close()

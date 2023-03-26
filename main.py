@@ -22,6 +22,8 @@ bdConnect = BDconnect()
 TokenBot = Data_file.Token
 # bot = telegram.Bot(TokenBot)
 
+persent_rec = 50
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -60,18 +62,37 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text=response)
         return
 
-    if recognize_result['cmd'] == "who_marked" and recognize_result['percent'] > 50:
+    if recognize_result['cmd'] == "who_marked" and recognize_result['percent'] > persent_rec:
         response = responseManager.who_marked()
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=response)
         return
     if responseManager.super_user:
-        if responseManager.user_state == 4:  # ожидание текста поста
+        if recognize_result['cmd'] == "info_post_create" and recognize_result['percent'] > persent_rec:
+            active_post_list = bdConnect.get_active_info_post_list()
+            if len(active_post_list) == 0:
+                responseManager.add_new_post(1)
+                response = responseManager.generate_response_no_name()
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text=response)
+            else:
+                user_id_active_post = active_post_list[0][0]
+                response = responseManager.response_have_active_post(user_id=user_id_active_post)
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text=response)
+            return
+
+        if responseManager.user_state <= 5 and ((recognize_result['cmd'] == "not" or recognize_result['cmd'] == "deactivation_post") \
+                and recognize_result['percent'] > persent_rec):
+            response = responseManager.deactivation_last_post()
+            await context.bot.send_message(chat_id=responseManager.user_id,
+                                           text=response)
+            return 0
+        elif responseManager.user_state == 4:  # ожидание текста поста
             response = responseManager.add_text_in_post()
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
             return
-            # bdConnect.add_text_in_post(responseManager.message, responseManager.user_post)
         elif responseManager.user_state == 5:
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text='Требуется фото')
@@ -86,11 +107,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 responseManager.set_user_state(7)
             else:
                 if (recognize_result['cmd'] == "sending_command" or recognize_result['cmd'] == "yes") \
-                        and recognize_result['percent'] > 50:
+                        and recognize_result['percent'] > persent_rec:
                     text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
                     responseManager.set_user_state(7)
                 elif (recognize_result['cmd'] == "not" or recognize_result['cmd'] == "deactivation_post") \
-                        and recognize_result['percent'] > 50:
+                        and recognize_result['percent'] > persent_rec:
                     response = responseManager.deactivation_post_user()
                     await context.bot.send_message(chat_id=responseManager.user_id,
                                                    text=response)
@@ -108,11 +129,15 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 responseMan.response_to_invitation_question()
 
                 template = text_data
-                # await context.bot.send_message(chat_id=id,text=template)
-
                 await context.bot.send_photo(chat_id=responseMan.user_id,
                                              photo=photo_data)
-                await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
+
+                if responseManager.get_user_post_type() == 1:
+                    await context.bot.send_message(chat_id=responseManager.user_id,
+                                                   text=template)
+                    responseManager.deactivation_info_post_user()
+                else:
+                    await context.bot.send_message(chat_id=responseMan.user_id, text=template, reply_markup=reply_markup)
 
             response = responseManager.generate_response_for_super_user_sending(name=responseManager.user_name_mf)
 
@@ -121,7 +146,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         elif responseManager.user_state == 7:
             if recognize_result['cmd'] == "deactivation_post" \
-                    and recognize_result['percent'] > 50:
+                    and recognize_result['percent'] > persent_rec:
                 response = responseManager.generate_response_no_name()
                 responseManager.deactivation_post_user()
                 await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -205,7 +230,7 @@ def post_creator(data):
 
 
 async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    active_post_list = bdConnect.get_actove_post_list()
+    active_post_list = bdConnect.get_active_post_list()
     query = update.callback_query
     variant = query.data
     if len(active_post_list) == 1:
@@ -246,7 +271,12 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text_data, photo_data, reply_markup = post_creator(responseManager.get_data_post_user())
             await context.bot.send_photo(chat_id=update.effective_chat.id,
                                          photo=photo_data)
-            await context.bot.send_message(chat_id=responseManager.user_id, text=text_data, reply_markup=reply_markup)
+
+            if responseManager.get_user_post_type() == 1:
+                await context.bot.send_message(chat_id=responseManager.user_id,
+                                               text=text_data)
+            else:
+                await context.bot.send_message(chat_id=responseManager.user_id, text=text_data, reply_markup=reply_markup)
 
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
@@ -375,9 +405,9 @@ async def post_builder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('echo', update.message.text)
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
     if responseManager.super_user:
-        active_post_list = bdConnect.get_actove_post_list()
+        active_post_list = bdConnect.get_active_post_list()
         if len(active_post_list) == 0:
-            responseManager.add_new_post()
+            responseManager.add_new_post(0)
             response = responseManager.generate_response_no_name()
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
