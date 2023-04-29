@@ -42,6 +42,13 @@ class DatabaseManager:
                         count_user_will_be INTEGER,
                         post_type NUMERIC)
                     """)
+        cursor.execute("""CREATE TABLE if not exists Rating
+                        (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                        user_id INTEGER,
+                        mafia_name TEXT, 
+                        rating_name TEXT,
+                        Statistics JSON)
+                    """)
         cursor.close()
 
     def extension_bd(self):

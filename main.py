@@ -13,6 +13,7 @@ import base64
 
 from fuzzywuzzy import fuzz
 from BDconnect import BDconnect
+from RatingManager import RatingManager
 from ResponseManager import ResponseManager
 from SendingMessagesManager import SendingMessagesManager
 
@@ -34,6 +35,7 @@ logging.basicConfig(
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(3)
     bdConnect.insert_user(name=update.effective_user.full_name, user_id=update.effective_user.id, mafia_name="-")
 
     responseManager = ResponseManager(user_id=update.effective_user.id, message=update.message.text)
@@ -230,6 +232,7 @@ def post_creator(data):
 
 
 async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(2)
     active_post_list = bdConnect.get_active_post_list()
     query = update.callback_query
     variant = query.data
@@ -260,6 +263,7 @@ async def response_to_invitation(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(1)
     responseManager = ResponseManager(user_id=update.effective_user.id, message='-',
                                       photo_id=update.message.photo[0].file_id)
     if responseManager.super_user:
@@ -280,6 +284,24 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text=response)
+
+
+async def documentExcel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print('11111111111111111111111111111111111111111111')
+    file = await context.bot.get_file(update.message.document)
+    await file.download_to_drive(update.message.document.file_name)
+    ratingManager = RatingManager(update.message.document.file_name)
+    print(update.message)
+    print(update.message.document)
+    print(update.message.document.file_id)
+
+    responseManager = ResponseManager(user_id=update.effective_user.id, message='-',
+                                      photo_id=update.message.document.file_id)
+    print(responseManager.doc_id)
+    #await context.bot.send_document(chat_id=update.effective_chat.id,
+                                    #document=responseManager.doc_id)
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Файл принят")
 
     """
     newFile = update.message.photo
@@ -431,7 +453,7 @@ if __name__ == '__main__':
 
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
-
+    doc_handler = MessageHandler(filters.Document.ALL, documentExcel)
     application.add_handler(CallbackQueryHandler(response_to_invitation))
 
     application.add_handler(start_handler)
@@ -443,5 +465,6 @@ if __name__ == '__main__':
 
     application.add_handler(echo_handler)
     application.add_handler(photo_handler)
+    application.add_handler(doc_handler)
 
     application.run_polling()

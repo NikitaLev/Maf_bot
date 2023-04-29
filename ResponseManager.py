@@ -12,10 +12,11 @@ def get_user_name_mf(user_id):
 
 class ResponseManager:
 
-    def __init__(self, user_id, message='-', photo_id='-'):
+    def __init__(self, user_id, message='-', photo_id='-', doc_id='-'):
         self.user_id = user_id
         self.message = message
         self.photo_id = photo_id
+        self.doc_id = doc_id
         self.user_name_mf = self.get_user_name_mf()
         self.user_state = self.get_state_user()
         self.user_invitation_state = self.get_invitation_state_user()
