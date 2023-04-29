@@ -2,7 +2,6 @@ import sqlite3
 import Data_file
 
 
-
 class DatabaseManager:
     def __init__(self):
         self.name_bd = Data_file.NameDB
@@ -47,11 +46,16 @@ class DatabaseManager:
                         user_id INTEGER,
                         mafia_name TEXT, 
                         rating_name TEXT,
-                        Statistics JSON)
+                        rating JSON,
+                        role_stat JSON,
+                        action_red_stat JSON,
+                        action_black_stat JSON)
                     """)
         cursor.close()
 
     def extension_bd(self):
         cursor = self.sqlite_connection.cursor()
-        cursor.execute("""ALTER TABLE Post ADD COLUMN post_type NUMERIC DEFAULT 0""")
+        #cursor.execute("""ALTER TABLE Rating RENAME COLUMN Statistics TO rating""")
+        #cursor.execute("""ALTER TABLE Rating DROP COLUMN role_stat""")
+        #cursor.execute("""ALTER TABLE Rating ADD COLUMN role_stat JSON""")
         cursor.close()
